@@ -1,41 +1,7 @@
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import kotlin.coroutines.coroutineContext
 import kotlin.math.roundToInt
-
-/**
- * Точка входа в приложение
- */
-fun main() {
-
-
-    val time = readDoubleFromConsole("Укажите количество шагов по времени")//5_000_000
-    val tau = readDoubleFromConsole("Укажите шаг по времени")//5_000_000
-    print("Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность\n")
-    val qLeft = readDoubleFromConsole("Введите qLeft")
-    val qRight = readDoubleFromConsole("Введите qRight")
-    val qTop = readDoubleFromConsole("Введите qTop")
-//    val qBottom = readDoubleFromConsole("Введите qBottom")
-    //sequenceSolve(time.toInt(), tau = tau, qLeft = qLeft, qRight = qRight, qTop = qTop)
-
-    val threadCount: Int = readDoubleFromConsole("Укажите количество потоков threadCount").roundToInt()
-
-    parallelSolve(
-        time.toInt(), threadCount, tau, qLeft, qRight, qTop
-    )
-}
-
-/**
- * Вариант №7 - Золото
- * lambda = 0.3,    5
- * Г1 II род условия, alpha = 3.99, q = 0
- * Г2 I T = 10
- * Г3 II q = 0
- * Г4 II q = 0
- * шаг по х = щаг по у = h = 0.01
- */
-
 
 /** Теплопроводность */
 const val lambda = 0.35
@@ -52,16 +18,58 @@ const val alpha = 3.99
 /** Значение q для границы 2-го рода */
 const val q = 0
 
+/**
+ * Вариант №7 - Золото
+ * lambda = 0.3,    5
+ * Г1 II род условия, alpha = 3.99, q = 0
+ * Г2 I T = 10
+ * Г3 II q = 0
+ * Г4 II q = 0
+ * шаг по х = щаг по у = h = 0.01
+ */
+fun main() {
+    val time = readDoubleFromConsole("Укажите количество шагов по времени")//5_000_000
+    val tau = readDoubleFromConsole("Укажите шаг по времени")//5_000_000
+    print("Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность\n")
+    val qLeft = readDoubleFromConsole("Введите qLeft")
+    val qRight = readDoubleFromConsole("Введите qRight")
+    val qTop = readDoubleFromConsole("Введите qTop")
+//    val qBottom = readDoubleFromConsole("Введите qBottom")
+    val showGraphics: Boolean = readBooleanFromConsole("Графика? 1 - yes, 0 - no")
+    val isSequenceSolve = readBooleanFromConsole("1 - последовательное, 0 - параллельное решение")
 
-fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Double, qRight: Double, qTop: Double) {
+    if (!isSequenceSolve) {
+        val threadCount: Int = readDoubleFromConsole("Укажите количество потоков threadCount").roundToInt()
+        parallelSolve(
+            time.toInt(), threadCount, tau, qLeft, qRight, qTop, showGraphics
+        )
+    } else {
+        sequenceSolve(
+            time.toInt(), tau, qLeft, qRight, qTop, showGraphics
+        )
+    }
+}
+
+
+fun parallelSolve(
+    timeSteps: Int = 10,
+    threadCount: Int,
+    tau: Double,
+    qLeft: Double,
+    qRight: Double,
+    qTop: Double,
+    showGraphics: Boolean = false
+) {
     /** Длина (по Х) */
     val width: Float = 1.0f
 
     /** Высота (по У) */
     val height: Float = width
 
-    // Число узлов сетки
+    /** Число узлов сетки по x */
     val nx = (width / dx).toInt() + 1
+
+    /** Число узлов сетки по y */
     val ny = (height / dy).toInt() + 1
     require(threadCount <= ny - 2)
 
@@ -71,26 +79,21 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
 
     //граничные условия
     applyBoundaryConditions(
-        temperatureField = temperature,
-        h = dx,
-        qLeft = qLeft,
-        qRight = qRight,
-        qTop = qTop,
-        lambda = lambda
+        temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
-    val startTime = System.nanoTime()
-    var currentTime = 0.0
+
     var r: Double = alpha * alpha * tau / (dx * dx)
     if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
 
     //размер секции, обрабатываемой одним thread'ом
     val blockSize = ny / threadCount
-    println("ThreadCount = $threadCount")
-    println("ny = $ny")
-    println("BlockSize = ${ny / threadCount}")
+//    println("ThreadCount = $threadCount")
+//    println("ny = $ny")
+//    println("BlockSize = ${ny / threadCount}")
 
-    val executor = Executors.newFixedThreadPool(threadCount) //TODO: вынести вне функции - ибо повторный вызов = утечка thread pool
-
+    val executor =
+        Executors.newFixedThreadPool(threadCount) //TODO: вынести вне функции - ибо повторный вызов = утечка thread pool
+    val startTime = System.nanoTime()
     //основной расчетный цикл
     for (step in 0 until timeSteps) {
         //* (star projection) - ожидаем что будет любой тип.
@@ -98,8 +101,13 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
 
         //по всем потокам
         for (threadIndex in 0 until threadCount) {
-            val start = threadIndex * (ny - 2) / threadCount + 1
-            val end = minOf((threadIndex + 1) * (ny - 2) / threadCount + 1, ny - 1)
+            //Реальная вычисляемая область: 1...ny-2. Вся область: 0...n-1
+            val start =
+                threadIndex * (ny - 2) / threadCount + 1 //Это начало блока внутри вычисляемой области (нумерация с 0) + 1 (т.к. в 0 граница)
+            val end = minOf( //чтоб не выйти за пределы
+                (threadIndex + 1) //конец блока в вычисляемой области
+                        * (ny - 2) / threadCount + 1, ny - 1
+            )
 //            val start = threadIndex * blockSize + 1
 //            //val end = minOf((threadIndex + 1) * blockSize, ny - 1)
 //            val end = minOf((threadIndex + 1) * ny / threadCount, ny - 1)
@@ -110,14 +118,7 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
                         for (x in 1 until nx - 1) {
 
                             temperatureNew[y][x] =
-                                temperature[y][x] +
-                                        r * (
-                                        temperature[y + 1][x] +
-                                                temperature[y - 1][x] +
-                                                temperature[y][x + 1] +
-                                                temperature[y][x - 1] -
-                                                4.0 * temperature[y][x]
-                                        )
+                                temperature[y][x] + r * (temperature[y + 1][x] + temperature[y - 1][x] + temperature[y][x + 1] + temperature[y][x - 1] - 4.0 * temperature[y][x])
                         }
                     }
                 }
@@ -138,7 +139,7 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
         temperature = temperatureNew
         temperatureNew = tmp
 
-        if ((step < 1000 && step % 100 == 0) || step % 1000 == 0) {//step > timeSteps/2 &&
+        if (showGraphics && ((step < 1000 && step % 100 == 0) || step % 1000 == 0)) {//step > timeSteps/2 &&
 
             clearConsole()
 
@@ -165,8 +166,6 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
 
             Thread.sleep(1000)
         }
-
-        currentTime += tau
     }
     //фиксируем время конца расчета
     val endTime = System.nanoTime()
@@ -181,7 +180,9 @@ fun parallelSolve(timeSteps: Int = 10, threadCount: Int, tau: Double, qLeft: Dou
 }
 
 
-fun sequenceSolve(timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Double, qTop: Double) {
+fun sequenceSolve(
+    timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
+) {
     /** Длина (по Х) */
     val width: Float = 1.0f
 
@@ -198,22 +199,14 @@ fun sequenceSolve(timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Doubl
 
     //граничные условия
     applyBoundaryConditions(
-        temperatureField = temperature,
-        h = dx,
-        qLeft = qLeft,
-        qRight = qRight,
-        qTop = qTop,
-        lambda = lambda
+        temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
-//    printField(temperature)
 
-
-//    Thread.sleep(1000)
-    //фиксируем время начала расчета
-    val startTime = System.nanoTime()
-    var currentTime = 0.0
     var r: Double = alpha * alpha * tau / (dx * dx)
     if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
+
+    //фиксируем время начала расчета
+    val startTime = System.nanoTime()
     //основной расчетный цикл
     for (step in 0 until timeSteps) {
 
@@ -221,28 +214,14 @@ fun sequenceSolve(timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Doubl
             for (x in 1..<nx - 1) {
 
                 temperatureNew[y][x] =
-                    temperature[y][x] +
-                            r * (
-                            temperature[y + 1][x] +
-                                    temperature[y - 1][x] +
-                                    temperature[y][x + 1] +
-                                    temperature[y][x - 1] -
-                                    4.0 * temperature[y][x]
-                            )
+                    temperature[y][x] + r * (temperature[y + 1][x] + temperature[y - 1][x] + temperature[y][x + 1] + temperature[y][x - 1] - 4.0 * temperature[y][x])
             }
         }
 
         //применяем граничные условия к новому слою
         applyBoundaryConditions(temperatureNew, dx, lambda, qLeft = qLeft, qRight = qRight, qTop = qTop)
-//        if (step % 500 == 0) {
-//            clearConsole()
-//            println("Step: $step")
-////            printFieldColored(temperature)
-//            val (r, g, b) = heatmapColor(value, minT, maxT)
-//            print("\u001B[48;2;${r};${g};${b}m  ")
-//            Thread.sleep(100)   // чтобы глаз успевал видеть
-//        }
-        if ((step < 1000 && step % 100 == 0) || step % 1000 == 0) {//step > timeSteps/2 &&
+
+        if (showGraphics && ((step < 1000 && step % 100 == 0) || step % 1000 == 0)) {//step > timeSteps/2 &&
 
             clearConsole()
 
@@ -273,7 +252,6 @@ fun sequenceSolve(timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Doubl
         val tmp = temperature
         temperature = temperatureNew
         temperatureNew = tmp
-        currentTime += tau
     }
     //фиксируем время конца расчета
     val endTime = System.nanoTime()
@@ -291,11 +269,7 @@ fun sequenceSolve(timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Doubl
  * q = 0 - теплоизолированность
  * */
 fun applyBoundaryConditions(
-    temperatureField: Array<DoubleArray>,
-    h: Double,
-    lambda: Double,
-    qLeft: Double,
-    qRight: Double,
+    temperatureField: Array<DoubleArray>, h: Double, lambda: Double, qLeft: Double, qRight: Double,
 //    qBottom: Double, //
     qTop: Double
 ) {
@@ -354,37 +328,6 @@ fun saveFieldToFile(field: Array<DoubleArray>, fileName: String) {
     }
 }
 
-/** Функция печати цветного температурного поля */
-fun printFieldColored(field: Array<DoubleArray>) {
-
-    val ny = field.size
-    val nx = field[0].size
-
-    val minT = field.minOf { row -> row.min() }
-    val maxT = field.maxOf { row -> row.max() }
-
-    for (y in 0 until ny) {
-        for (x in 0 until nx) {
-
-            val value = field[y][x]
-
-            // Нормировка в [0..1]
-            val normalized =
-                if (maxT - minT == 0.0) 0.0
-                else (value - minT) / (maxT - minT)
-
-            // Перевод в цвет 256-спектра
-            val color = (16 + normalized * 215).toInt()
-
-            print("\u001B[38;5;${color}m██")
-        }
-        println()
-    }
-
-    // Сброс цвета
-    println("\u001B[0m")
-}
-
 fun clearConsole() {
     print("\u001B[H\u001B[2J")
     System.out.flush()
@@ -392,9 +335,8 @@ fun clearConsole() {
 
 fun heatmapColor(value: Double, min: Double, max: Double): Triple<Int, Int, Int> {
 
-    val normalized =
-        if (max - min == 0.0) 0.0
-        else (value - min) / (max - min)
+    val normalized = if (max - min == 0.0) 0.0
+    else (value - min) / (max - min)
 
     return when {
 
@@ -430,6 +372,22 @@ fun readDoubleFromConsole(prompt: String): Double {
             return input?.toDouble() ?: 0.0
         } catch (e: Exception) {
             println("Введите числовое значение!")
+        }
+    }
+}
+
+fun readBooleanFromConsole(prompt: String): Boolean {
+    while (true) {
+        print("$prompt: ")
+
+        val input = readLine()
+        if (input == "1") return true
+        else if (input == "0") return false
+
+        try {
+            return input?.toBoolean() ?: false
+        } catch (e: Exception) {
+            println("Введите boolean значение!")
         }
     }
 }
