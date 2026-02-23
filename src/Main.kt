@@ -6,17 +6,14 @@ import kotlin.math.roundToInt
 /** Теплопроводность */
 const val lambda = 0.35
 
-/** Шаг по х */
-const val dx = 0.01
-
-/** Шаг по y */
-const val dy = 0.01
+///** Шаг по х */
+//const val dx = 0.01
+//
+///** Шаг по y */
+//const val dy = 0.01
 
 /** Температуропроводность */
 const val alpha = 3.99
-
-/** Значение q для границы 2-го рода */
-const val q = 0
 
 /**
  * Вариант №7 - Золото
@@ -60,11 +57,13 @@ fun parallelSolve(
     qTop: Double,
     showGraphics: Boolean = false
 ) {
+    val dx = tau
+    val dy = tau
     /** Длина (по Х) */
-    val width: Float = 1.0f
+    val width = 1.0f
 
     /** Высота (по У) */
-    val height: Float = width
+    val height = width
 
     /** Число узлов сетки по x */
     val nx = (width / dx).toInt() + 1
@@ -84,12 +83,6 @@ fun parallelSolve(
 
     var r: Double = alpha * alpha * tau / (dx * dx)
     if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
-
-    //размер секции, обрабатываемой одним thread'ом
-    val blockSize = ny / threadCount
-//    println("ThreadCount = $threadCount")
-//    println("ny = $ny")
-//    println("BlockSize = ${ny / threadCount}")
 
     val executor =
         Executors.newFixedThreadPool(threadCount) //TODO: вынести вне функции - ибо повторный вызов = утечка thread pool
@@ -158,6 +151,9 @@ fun parallelSolve(
                     val (r, g, b) = heatmapColor(value, minT, maxT)
 
                     print("\u001B[48;2;${r};${g};${b}m  ")
+//                    val colorIndex = rgbTo256(r, g, b)
+
+//                    print("\u001B[48;5;${colorIndex}m  ")
                 }
                 println()
             }
@@ -183,11 +179,13 @@ fun parallelSolve(
 fun sequenceSolve(
     timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
 ) {
+    val dx = tau
+    val dy = tau
     /** Длина (по Х) */
-    val width: Float = 1.0f
+    val width = 1.0f
 
     /** Высота (по У) */
-    val height: Float = width
+    val height = width
 
     // Число узлов сетки
     val nx = (width / dx).toInt() + 1
@@ -240,7 +238,11 @@ fun sequenceSolve(
                     val (r, g, b) = heatmapColor(value, minT, maxT)
 
                     print("\u001B[48;2;${r};${g};${b}m  ")
+//                    val colorIndex = rgbTo256(r, g, b)
+
+//                    print("\u001B[48;5;${colorIndex}m  ")
                 }
+
                 println()
             }
 
@@ -326,6 +328,14 @@ fun saveFieldToFile(field: Array<DoubleArray>, fileName: String) {
             out.println(row.joinToString(" ") { "%.6f".format(it) })
         }
     }
+}
+
+fun rgbTo256(r: Int, g: Int, b: Int): Int {
+    val r6 = (r / 51).coerceIn(0, 5)
+    val g6 = (g / 51).coerceIn(0, 5)
+    val b6 = (b / 51).coerceIn(0, 5)
+
+    return 16 + 36 * r6 + 6 * g6 + b6
 }
 
 fun clearConsole() {
