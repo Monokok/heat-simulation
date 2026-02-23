@@ -1,0 +1,111 @@
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qTop: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 1
+Time to solve: 65556.6114 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 12
+Time to solve: 18038.863 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 24
+Time to solve: 17036.9853 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 36
+Time to solve: 16903.487 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Введите qTop: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 64
+Time to solve: 17176.6907 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Введите qTop: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 6
+Time to solve: 15072.5542 Ms
+Нажмите Enter для продолжения...
+
+PS C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar> .\start.bat
+
+C:\Users\Victor\IdeaProjects\heat-simulation\out\artifacts\heat_simulation_parallel_jar>java -jar heat-simulation.jar
+Укажите количество шагов по времени: 10000
+Введите шаг пространственной сетки dx: 0.001
+Введите шаг по времени tau: 0.001
+tau скорректировано до устойчивого значения: 1.5703418948373437E-8
+Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность
+Введите qLeft: 0
+Введите qRight: 0
+Введите qTop: 0
+Графика? 1 - yes, 0 - no: 0
+1 - последовательное, 0 - параллельное решение: 0
+Укажите количество потоков threadCount: 3
+Time to solve: 15394.4017 Ms
+Нажмите Enter для продолжения..

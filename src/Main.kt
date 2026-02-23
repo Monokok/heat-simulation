@@ -6,12 +6,6 @@ import kotlin.math.roundToInt
 /** Теплопроводность */
 const val lambda = 0.35
 
-///** Шаг по х */
-//const val dx = 0.01
-//
-///** Шаг по y */
-//const val dy = 0.01
-
 /** Температуропроводность */
 const val alpha = 3.99
 
@@ -26,7 +20,14 @@ const val alpha = 3.99
  */
 fun main() {
     val time = readDoubleFromConsole("Укажите количество шагов по времени")//5_000_000
-    val tau = readDoubleFromConsole("Укажите шаг по времени")//5_000_000
+    val dx = readDoubleFromConsole("Введите шаг пространственной сетки dx")
+    var tau = readDoubleFromConsole("Введите шаг по времени tau")//5_000_000
+
+    val r = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) {
+        tau = 0.25 * dx * dx / (alpha * alpha)
+        println("tau скорректировано до устойчивого значения: $tau")
+    }
     print("Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность\n")
     val qLeft = readDoubleFromConsole("Введите qLeft")
     val qRight = readDoubleFromConsole("Введите qRight")
@@ -38,11 +39,11 @@ fun main() {
     if (!isSequenceSolve) {
         val threadCount: Int = readDoubleFromConsole("Укажите количество потоков threadCount").roundToInt()
         parallelSolve(
-            time.toInt(), threadCount, tau, qLeft, qRight, qTop, showGraphics
+            time.toInt(), threadCount, tau, dx, qLeft, qRight, qTop, showGraphics
         )
     } else {
         sequenceSolve(
-            time.toInt(), tau, qLeft, qRight, qTop, showGraphics
+            time.toInt(), tau, dx, qLeft, qRight, qTop, showGraphics
         )
     }
 }
@@ -52,13 +53,15 @@ fun parallelSolve(
     timeSteps: Int = 10,
     threadCount: Int,
     tau: Double,
+    dx: Double,
     qLeft: Double,
     qRight: Double,
     qTop: Double,
     showGraphics: Boolean = false
 ) {
-    val dx = tau
-    val dy = tau
+//    val dx = tau
+    val dy = dx
+
     /** Длина (по Х) */
     val width = 1.0f
 
@@ -81,8 +84,8 @@ fun parallelSolve(
         temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
 
-    var r: Double = alpha * alpha * tau / (dx * dx)
-    if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
+    val r: Double = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) error("Нарушено условие устойчивости: r = $r")
 
     val executor =
         Executors.newFixedThreadPool(threadCount) //TODO: вынести вне функции - ибо повторный вызов = утечка thread pool
@@ -177,10 +180,14 @@ fun parallelSolve(
 
 
 fun sequenceSolve(
-    timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
+    timeSteps: Int = 10,
+    tau: Double,
+    dx: Double,
+    qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
 ) {
-    val dx = tau
-    val dy = tau
+//    val dx = dx
+    val dy = dx
+
     /** Длина (по Х) */
     val width = 1.0f
 
@@ -200,8 +207,8 @@ fun sequenceSolve(
         temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
 
-    var r: Double = alpha * alpha * tau / (dx * dx)
-    if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
+    val r: Double = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) error("Нарушено условие устойчивости: r = $r")
 
     //фиксируем время начала расчета
     val startTime = System.nanoTime()
