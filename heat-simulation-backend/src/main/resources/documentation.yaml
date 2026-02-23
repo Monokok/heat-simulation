@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  title: Heat Simulation API
+  version: 1.0.0
+
+paths:
+  /simulate:
+    post:
+      summary: Run heat simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationRequest'
+      responses:
+        '200':
+          description: Simulation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+
+components:
+  schemas:
+    SimulationRequest:
+      type: object
+      properties:
+        timeSteps:
+          type: integer
+        threadCount:
+          type: integer
+        tau:
+          type: number
+        dx:
+          type: number
+        lambda:
+          type: number
+        alpha:
+          type: number
+        qLeft:
+          type: number
+        qRight:
+          type: number
+        qTop:
+          type: number
+      required:
+        - timeSteps
+        - threadCount
+        - tau
+        - dx
+        - lambda
+        - alpha
+        - qLeft
+        - qRight
+        - qTop
+
+    SimulationResponse:
+      type: object
+      properties:
+        temperature:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+        executionTimeMs:
+          type: number

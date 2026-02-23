@@ -1,24 +1,19 @@
+package main
+
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import kotlin.math.roundToInt
-
 /** Теплопроводность */
 const val lambda = 0.35
-
-///** Шаг по х */
-//const val dx = 0.01
-//
-///** Шаг по y */
-//const val dy = 0.01
 
 /** Температуропроводность */
 const val alpha = 3.99
 
 /**
  * Вариант №7 - Золото
- * lambda = 0.3,    5
- * Г1 II род условия, alpha = 3.99, q = 0
+ * main.lambda = 0.3,    5
+ * Г1 II род условия, main.alpha = 3.99, q = 0
  * Г2 I T = 10
  * Г3 II q = 0
  * Г4 II q = 0
@@ -26,23 +21,30 @@ const val alpha = 3.99
  */
 fun main() {
     val time = readDoubleFromConsole("Укажите количество шагов по времени")//5_000_000
-    val tau = readDoubleFromConsole("Укажите шаг по времени")//5_000_000
+    val dx = readDoubleFromConsole("Введите шаг пространственной сетки dx")
+    var tau = readDoubleFromConsole("Введите шаг по времени tau")//5_000_000
+
+    val r = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) {
+        tau = 0.25 * dx * dx / (alpha * alpha)
+        println("tau скорректировано до устойчивого значения: $tau")
+    }
     print("Далее укажите значение температур для границ. Учтите: q > 0 - получение тепла извне, q < 0 - отдача тепла наружу, q = 0 - теплоизолированность\n")
     val qLeft = readDoubleFromConsole("Введите qLeft")
     val qRight = readDoubleFromConsole("Введите qRight")
     val qTop = readDoubleFromConsole("Введите qTop")
-//    val qBottom = readDoubleFromConsole("Введите qBottom")
+//    val qBottom = main.readDoubleFromConsole("Введите qBottom")
     val showGraphics: Boolean = readBooleanFromConsole("Графика? 1 - yes, 0 - no")
     val isSequenceSolve = readBooleanFromConsole("1 - последовательное, 0 - параллельное решение")
 
     if (!isSequenceSolve) {
         val threadCount: Int = readDoubleFromConsole("Укажите количество потоков threadCount").roundToInt()
         parallelSolve(
-            time.toInt(), threadCount, tau, qLeft, qRight, qTop, showGraphics
+            time.toInt(), threadCount, tau, dx, qLeft, qRight, qTop, showGraphics
         )
     } else {
         sequenceSolve(
-            time.toInt(), tau, qLeft, qRight, qTop, showGraphics
+            time.toInt(), tau, dx, qLeft, qRight, qTop, showGraphics
         )
     }
 }
@@ -52,13 +54,15 @@ fun parallelSolve(
     timeSteps: Int = 10,
     threadCount: Int,
     tau: Double,
+    dx: Double,
     qLeft: Double,
     qRight: Double,
     qTop: Double,
     showGraphics: Boolean = false
 ) {
-    val dx = tau
-    val dy = tau
+//    val dx = tau
+    val dy = dx
+
     /** Длина (по Х) */
     val width = 1.0f
 
@@ -81,8 +85,8 @@ fun parallelSolve(
         temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
 
-    var r: Double = alpha * alpha * tau / (dx * dx)
-    if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
+    val r: Double = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) error("Нарушено условие устойчивости: r = $r")
 
     val executor =
         Executors.newFixedThreadPool(threadCount) //TODO: вынести вне функции - ибо повторный вызов = утечка thread pool
@@ -151,7 +155,7 @@ fun parallelSolve(
                     val (r, g, b) = heatmapColor(value, minT, maxT)
 
                     print("\u001B[48;2;${r};${g};${b}m  ")
-//                    val colorIndex = rgbTo256(r, g, b)
+//                    val colorIndex = main.rgbTo256(r, g, b)
 
 //                    print("\u001B[48;5;${colorIndex}m  ")
                 }
@@ -177,10 +181,14 @@ fun parallelSolve(
 
 
 fun sequenceSolve(
-    timeSteps: Int = 10, tau: Double, qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
+    timeSteps: Int = 10,
+    tau: Double,
+    dx: Double,
+    qLeft: Double, qRight: Double, qTop: Double, showGraphics: Boolean = false
 ) {
-    val dx = tau
-    val dy = tau
+//    val dx = dx
+    val dy = dx
+
     /** Длина (по Х) */
     val width = 1.0f
 
@@ -200,8 +208,8 @@ fun sequenceSolve(
         temperatureField = temperature, h = dx, qLeft = qLeft, qRight = qRight, qTop = qTop, lambda = lambda
     )
 
-    var r: Double = alpha * alpha * tau / (dx * dx)
-    if (r >= 0.25) r = 0.2// error("Нарушено условие устойчивости: r = $r")
+    val r: Double = alpha * alpha * tau / (dx * dx)
+    if (r > 0.25) error("Нарушено условие устойчивости: r = $r")
 
     //фиксируем время начала расчета
     val startTime = System.nanoTime()
@@ -238,7 +246,7 @@ fun sequenceSolve(
                     val (r, g, b) = heatmapColor(value, minT, maxT)
 
                     print("\u001B[48;2;${r};${g};${b}m  ")
-//                    val colorIndex = rgbTo256(r, g, b)
+//                    val colorIndex = main.rgbTo256(r, g, b)
 
 //                    print("\u001B[48;5;${colorIndex}m  ")
                 }
@@ -286,29 +294,29 @@ fun applyBoundaryConditions(
     }
 
     //по Г4 - всей верхней границе (II род) q = 0
-    //U_N = U_(N-1) - h*q/lambda
+    //U_N = U_(N-1) - h*q/main.lambda
     for (x in 0..<nx) {
         //по мат формуле: но в таком случае q < 0 мы ПОЛУЧАЕМ, q > 0 ОТДАЕМ тепло
-//        temperatureField[ny - 1][x] = temperatureField[ny - 2][x] - (h * qTop) / lambda
+//        temperatureField[ny - 1][x] = temperatureField[ny - 2][x] - (h * qTop) / main.lambda
         temperatureField[ny - 1][x] = temperatureField[ny - 2][x] + (h * qTop) / lambda
 
     }
 
     //по Г1 - всей левой границе (II род)
-    //U_1 = U_2 + h*q/lambda
+    //U_1 = U_2 + h*q/main.lambda
     for (y in 0..<ny) {
         temperatureField[y][0] = temperatureField[y][1] + (h * qLeft) / lambda
     }
 
     //по Г3 - всей правой границе
-    //U_N = U_(N-1) - h*q/lambda
+    //U_N = U_(N-1) - h*q/main.lambda
     for (y in 0..<ny) {
         //по мат формуле: но в таком случае q < 0 мы ПОЛУЧАЕМ, q > 0 ОТДАЕМ тепло
-//        temperatureField[y][nx - 1] = temperatureField[y][nx - 2] - (h * qRight) / lambda
+//        temperatureField[y][nx - 1] = temperatureField[y][nx - 2] - (h * qRight) / main.lambda
         temperatureField[y][nx - 1] = temperatureField[y][nx - 2] + (h * qRight) / lambda
 
         //чтоб унифицировано:
-//        temperatureField[y][nx - 2] + (h * qRight) / lambda
+//        temperatureField[y][nx - 2] + (h * qRight) / main.lambda
     }
 }
 
